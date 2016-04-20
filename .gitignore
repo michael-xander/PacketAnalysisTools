@@ -1,0 +1,5 @@
+# removing traffic files
+traffic/
+# removing intellij specific files
+*.iml
+.idea
