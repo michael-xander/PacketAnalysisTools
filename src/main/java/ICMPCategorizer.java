@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -34,7 +35,17 @@ public class ICMPCategorizer
             }
             else if(args[0].equals("-d"))
             {
+                String folderName = args[1];
 
+                File folder = new File(folderName);
+                HashMap<String, Integer> ICMPCategoryMap = new HashMap<String, Integer>();
+
+                for(String fileName: folder.list())
+                {
+                    fileName = folderName + "/" + fileName;
+                    updateICMPCategoryTallyWithFile(ICMPCategoryMap, fileName);
+                }
+                printOutTally(ICMPCategoryMap);
             }
             else
             {
