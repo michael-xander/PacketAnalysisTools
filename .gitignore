@@ -3,3 +3,5 @@ traffic/
 # removing intellij specific files
 *.iml
 .idea
+# removing content in the target folder
+target/
