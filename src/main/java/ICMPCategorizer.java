@@ -13,86 +13,97 @@ public class ICMPCategorizer
 {
     public static void main(String[] args)
     {
-        String fileName = "traffic/eth1_eth2_20110208031002";
-        String command = "tcpdump";
-        ProcessBuilder processBuilder = new ProcessBuilder(command ,"-t", "icmp", "and not src net 192.168.0.0/16", "and not src net 10.0.0.0/8" ,"-r", fileName);
-        try
+        if(args.length == 0)
         {
-            Process process = processBuilder.start();
-            int errorCode = process.waitFor();
-
-            BufferedReader bufferedReader = null;
-            String line = null;
-
-            if(errorCode == 0)
+            System.out.println("No arguments provided.");
+            System.out.println("Please provide a file to read with -f flag e.g java ICMpCategorizer -f sample_file");
+        }
+        else if(args.length == 2 && args[0].equals("-f"))
+        {
+            String fileName = args[1];
+            ProcessBuilder processBuilder = new ProcessBuilder("tcpdump" ,"-t", "icmp", "and not src net 192.168.0.0/16", "and not src net 10.0.0.0/8" ,"-r", fileName);
+            try
             {
-                System.out.println("No error occurred");
+                Process process = processBuilder.start();
+                int errorCode = process.waitFor();
 
-                //set up the hashmap that does the counting
-                HashMap<String, Integer> icmpCategoryMap = new HashMap<String, Integer>();
+                BufferedReader bufferedReader = null;
+                String line = null;
 
-                bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-                while((line = bufferedReader.readLine()) != null)
+                if(errorCode == 0)
                 {
-                    //System.out.println(line);
+                    System.out.println("No error occurred on running command.");
 
-                    //remove message length
-                    String tempString = (line.split(","))[0];
-                    tempString = tempString.trim();
-                    //System.out.println(tempString);
+                    //set up the hashmap that does the counting
+                    HashMap<String, Integer> icmpCategoryMap = new HashMap<String, Integer>();
 
-                    //get the icmp message
-                    String icmpMessage = (tempString.split(":"))[1];
-                    icmpMessage = icmpMessage.trim();
-                    //System.out.println(icmpMessage);
+                    bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-                    String icmpCategory = null;
-
-                    if(icmpMessage.contains("unreachable"))
-                        icmpCategory = "ICMP Destination unreachable";
-                    else
-                        icmpCategory = icmpMessage;
-
-                    Integer currentCount = 1;
-
-                    if(icmpCategoryMap.containsKey(icmpCategory))
+                    while((line = bufferedReader.readLine()) != null)
                     {
-                        //increase the count for this icmp category
-                        currentCount = icmpCategoryMap.get(icmpCategory);
-                        currentCount++;
+
+                        //remove message length
+                        String tempString = (line.split(","))[0];
+                        tempString = tempString.trim();
+                        //System.out.println(tempString);
+
+                        //get the icmp message
+                        String icmpMessage = (tempString.split(":"))[1];
+                        icmpMessage = icmpMessage.trim();
+                        //System.out.println(icmpMessage);
+
+                        String icmpCategory = null;
+
+                        if(icmpMessage.contains("unreachable"))
+                            icmpCategory = "ICMP Destination unreachable";
+                        else
+                            icmpCategory = icmpMessage;
+
+                        Integer currentCount = 1;
+
+                        if(icmpCategoryMap.containsKey(icmpCategory))
+                        {
+                            //increase the count for this icmp category
+                            currentCount = icmpCategoryMap.get(icmpCategory);
+                            currentCount++;
+                        }
+
+                        icmpCategoryMap.put(icmpCategory, currentCount);
                     }
 
-                    icmpCategoryMap.put(icmpCategory, currentCount);
-                }
+                    if(icmpCategoryMap.isEmpty())
+                        System.out.println("No ICMP data found in file");
+                    else
+                    {
+                        System.out.println("The tally is as follows:");
 
-                if(icmpCategoryMap.isEmpty())
-                    System.out.println("No ICMP data found in file");
+                        for (String key: icmpCategoryMap.keySet())
+                        {
+                            System.out.println(key + " : " + icmpCategoryMap.get(key));
+                        }
+                    }
+                }
                 else
                 {
-                    System.out.println("The tally is as follows:");
+                    System.out.println("An error occurred while running command.");
+                    bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
-                    for (String key: icmpCategoryMap.keySet())
+                    while((line = bufferedReader.readLine()) != null)
                     {
-                        System.out.println(key + " : " + icmpCategoryMap.get(key));
+                        System.out.println(line);
                     }
-                }
-            }
-            else
-            {
-                System.out.println("An error occurred");
-                bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
-                while((line = bufferedReader.readLine()) != null)
-                {
-                    System.out.println(line);
                 }
-
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        }
+        else
+        {
+            System.out.println("Incorrect arguments provided.");
+            System.out.println("Please provide a file to read with -f flag e.g java ICMPCategorizer -f sample_file");
         }
     }
 }
