@@ -2,6 +2,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 
 /**
@@ -16,6 +19,8 @@ public class ICMPCategorizer
     private static final String FILE_ARGUMENT_INSTRUCTION = "- Provide a file to read with the -f flag e.g java ICMPCategorizer -f sample_file";
     private static final String FOLDER_ARGUMENT_INSTRUCTION = "- Provide a folder to read files from with the -d flag e.g java ICMPCategorizer -d sample_folder";
 
+    private static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
     public static void main(String[] args)
     {
         if(args.length == 0)
@@ -26,9 +31,14 @@ public class ICMPCategorizer
         }
         else if(args.length == 2)
         {
+            DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
             if(args[0].equals("-f"))
             {
+                System.out.println("======================================================================");
+                printCurrentTime();
                 String fileName = args[1];
+                System.out.println("Preparing to process file: " + fileName);
                 HashMap<String, Integer> ICMPCategoryMap = new HashMap<String, Integer>();
                 updateICMPCategoryTallyWithFile(ICMPCategoryMap, fileName);
                 printOutTally(ICMPCategoryMap);
@@ -40,12 +50,18 @@ public class ICMPCategorizer
                 File folder = new File(folderName);
                 HashMap<String, Integer> ICMPCategoryMap = new HashMap<String, Integer>();
 
+                System.out.println("======================================================================");
+                System.out.println("Preparing to process files in folder: " + folderName);
+
                 for(String fileName: folder.list())
                 {
                     fileName = folderName + "/" + fileName;
+                    System.out.println("======================================================================");
+                    printCurrentTime();
+                    System.out.println("Preparing to process file: " + fileName);
                     updateICMPCategoryTallyWithFile(ICMPCategoryMap, fileName);
+                    printOutTally(ICMPCategoryMap);
                 }
-                printOutTally(ICMPCategoryMap);
             }
             else
             {
@@ -72,6 +88,8 @@ public class ICMPCategorizer
         ProcessBuilder processBuilder = new ProcessBuilder("tcpdump" ,"-t", "icmp", "and not src net 192.168.0.0/16", "and not src net 10.0.0.0/8" ,"-r", fileName);
         try
         {
+            printCurrentTime();
+            System.out.println("Running tcpdump on file: " + fileName);
             Process process = processBuilder.start();
             int errorCode = process.waitFor();
 
@@ -80,7 +98,8 @@ public class ICMPCategorizer
 
             if(errorCode == 0)
             {
-                System.out.println("No error occurred on running command.");
+                printCurrentTime();
+                System.out.println("No error occurred on running tcpdump command for file: " + fileName);
 
 
                 bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -119,7 +138,8 @@ public class ICMPCategorizer
             }
             else
             {
-                System.out.println("An error occurred while running command.");
+                printCurrentTime();
+                System.out.println("An error occurred while running tcpdump command for file: " + fileName);
                 bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
                 while((line = bufferedReader.readLine()) != null)
@@ -135,13 +155,22 @@ public class ICMPCategorizer
         }
     }
 
+    private static void printCurrentTime()
+    {
+        System.out.print(DATE_FORMAT.format(new Date()) + " ");
+    }
+
     private static void printOutTally(HashMap<String, Integer> ICMPCategoryMap)
     {
         if(ICMPCategoryMap.isEmpty())
+        {
+            printCurrentTime();
             System.out.println("No ICMP data found.");
+        }
         else
         {
-            System.out.println("The tally is as follows:");
+            printCurrentTime();
+            System.out.println("The current tally is as follows:");
 
             for(String key: ICMPCategoryMap.keySet())
             {
