@@ -1,13 +1,8 @@
 package icmp;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.io.*;
 import java.util.HashMap;
+import java.util.Scanner;
 
 /**
  * <h1>ICMP Categorizer</h1>
@@ -18,64 +13,124 @@ import java.util.HashMap;
 public class ICMPCategorizer
 {
     // the instruction messages to be printed out in case of an error
-    private static final String FILE_ARGUMENT_INSTRUCTION = "- Provide a file to read with the -f flag e.g java ICMPCategorizer -f sample_file";
     private static final String FOLDER_ARGUMENT_INSTRUCTION = "- Provide a folder to read files from with the -d flag e.g java ICMPCategorizer -d sample_folder";
 
-    private static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    private static String CATEGORY_FOLDER_NAME = "data";
 
     public static void main(String[] args)
     {
         if(args.length == 0)
         {
             System.out.println("No arguments provided. Please do one of the following:");
-            System.out.println(FILE_ARGUMENT_INSTRUCTION);
             System.out.println(FOLDER_ARGUMENT_INSTRUCTION);
         }
         else if(args.length == 2)
         {
-            DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-
-            if(args[0].equals("-f"))
-            {
-                System.out.println("======================================================================");
-                printCurrentTime();
-                String fileName = args[1];
-                System.out.println("Preparing to process file: " + fileName);
-                HashMap<String, Integer> ICMPCategoryMap = new HashMap<String, Integer>();
-                updateICMPCategoryTallyWithFile(ICMPCategoryMap, fileName);
-                printOutTally(ICMPCategoryMap);
-            }
-            else if(args[0].equals("-d"))
+            if(args[0].equals("-d"))
             {
                 String folderName = args[1];
 
-                File folder = new File(folderName);
-                HashMap<String, Integer> ICMPCategoryMap = new HashMap<String, Integer>();
+                System.out.println("======================================================================");
+                //delete the data folder if already created
+                File dataFolder = new File(folderName + "/" + CATEGORY_FOLDER_NAME);
+
+                if(dataFolder.exists())
+                {
+                    printCurrentTime();
+                    System.out.println("Deleting data category folder in : " + folderName);
+                    ICMPFilter.deleteDirectory(dataFolder);
+                }
+
+                dataFolder = new File(folderName + "/" + CATEGORY_FOLDER_NAME);
+
+                printCurrentTime();
+                if(dataFolder.mkdir())
+                {
+                    System.out.println("Created data category folder in : " + folderName);
+                }
+                else
+                {
+                    System.out.println("Failed to make data category folder in : " + folderName);
+                    System.exit(1);
+                }
+
+                HashMap<String, HashMap<String, Integer>> ICMPCategoryMap = new HashMap<String, HashMap<String, Integer>>();
 
                 System.out.println("======================================================================");
-                System.out.println("Preparing to process files in folder: " + folderName);
+                printCurrentTime();
+                System.out.println("Preparing to process icmp dumps in folder : " + folderName);
 
-                for(String fileName: folder.list())
+                File folder = new File(folderName);
+
+                for(File file : folder.listFiles())
                 {
-                    fileName = folderName + "/" + fileName;
-                    System.out.println("======================================================================");
-                    printCurrentTime();
-                    System.out.println("Preparing to process file: " + fileName);
-                    updateICMPCategoryTallyWithFile(ICMPCategoryMap, fileName);
-                    printOutTally(ICMPCategoryMap);
+
+                    if(file.isFile() && !file.isHidden())
+                    {
+                        System.out.println("======================================================================");
+                        printCurrentTime();
+                        System.out.println("Preparing to process file : " + folderName + "/" + file.getName());
+                        writeICMPCategoryToFile(folderName, file.getName());
+                    }
+
                 }
+
+                System.out.println("======================================================================");
+                printCurrentTime();
+                System.out.println("Beginning processing of categories");
+
+                dataFolder = new File(folderName + "/" + CATEGORY_FOLDER_NAME);
+
+                for(File file : dataFolder.listFiles())
+                {
+                    if(file.isFile() && !file.isHidden())
+                    {
+                        System.out.println("======================================================================");
+                        printCurrentTime();
+                        System.out.println("Analysing file : " + file.getName());
+
+                        try {
+                            Scanner scanner = new Scanner(file);
+
+                            while(scanner.hasNextLine())
+                            {
+                                String line = scanner.nextLine();
+
+                                if(!line.contains("!")) {
+                                    String[] strArr = line.split(" ");
+
+                                    if (!ICMPCategoryMap.containsKey(strArr[0])) {
+                                        ICMPCategoryMap.put(strArr[0], new HashMap<String, Integer>());
+                                    }
+
+                                    if (!ICMPCategoryMap.get(strArr[0]).containsKey(strArr[1])) {
+                                        ICMPCategoryMap.get(strArr[0]).put(strArr[1], 0);
+                                    }
+
+                                    int currentCount = ICMPCategoryMap.get(strArr[0]).get(strArr[1]);
+                                    ICMPCategoryMap.get(strArr[0]).put(strArr[1], currentCount + 1);
+                                }
+
+                            }
+
+                            printOutTally(ICMPCategoryMap);
+
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
             }
             else
             {
                 System.out.println("Wrong arguments provided. Please do one of the following:");
-                System.out.println(FILE_ARGUMENT_INSTRUCTION);
                 System.out.println(FOLDER_ARGUMENT_INSTRUCTION);
             }
         }
         else
         {
             System.out.println("More arguments than expected provided. Please do one of the following:");
-            System.out.println(FILE_ARGUMENT_INSTRUCTION);
             System.out.println(FOLDER_ARGUMENT_INSTRUCTION);
         }
     }
@@ -85,98 +140,74 @@ public class ICMPCategorizer
      * @param ICMPCategoryMap The hashmap containing the ICMP message categories and their current counts
      * @param fileName The name of the file to read from and update the category counts
      */
-    private static void updateICMPCategoryTallyWithFile(HashMap<String, Integer> ICMPCategoryMap, String fileName)
+    private static void writeICMPCategoryToFile(String folderName, String fileName)
     {
-        ProcessBuilder processBuilder = new ProcessBuilder("tcpdump" ,"-t", "icmp", "and not src net 192.168.0.0/16", "and not src net 10.0.0.0/8" ,"-r", fileName);
+        ProcessBuilder processBuilder = new ProcessBuilder("ipsumdump", "--icmp-type-name", "--icmp-code-name", "-r",
+                folderName + "/" + fileName, "-o", folderName + "/" + CATEGORY_FOLDER_NAME + "/cat_" + fileName);
+
         try
         {
             printCurrentTime();
-            System.out.println("Running tcpdump on file: " + fileName);
+            System.out.println("Processing file : " + fileName);
             Process process = processBuilder.start();
-            int errorCode = process.waitFor();
 
             BufferedReader bufferedReader = null;
             String line = null;
 
+            int errorCode = process.waitFor();
+
             if(errorCode == 0)
             {
                 printCurrentTime();
-                System.out.println("No error occurred on running tcpdump command for file: " + fileName);
+                System.out.println("No error occurred on running ipsumdump command for file: " + fileName);
 
-
-                bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-                while((line = bufferedReader.readLine()) != null)
-                {
-
-                    //remove message length
-                    String tempString = (line.split(","))[0];
-                    tempString = tempString.trim();
-                    //System.out.println(tempString);
-
-                    //get the icmp message
-                    String icmpMessage = (tempString.split(":"))[1];
-                    icmpMessage = icmpMessage.trim();
-                    //System.out.println(icmpMessage);
-
-                    String icmpCategory = null;
-
-                    if(icmpMessage.contains("unreachable"))
-                        icmpCategory = "ICMP Destination unreachable";
-                    else
-                        icmpCategory = icmpMessage;
-
-                    Integer currentCount = 1;
-
-                    if(ICMPCategoryMap.containsKey(icmpCategory))
-                    {
-                        //increase the count for this icmp category
-                        currentCount = ICMPCategoryMap.get(icmpCategory);
-                        currentCount++;
-                    }
-
-                    ICMPCategoryMap.put(icmpCategory, currentCount);
-                }
             }
             else
             {
                 printCurrentTime();
-                System.out.println("An error occurred while running tcpdump command for file: " + fileName);
+                System.out.println("An error occurred while running ipsumdump for file : " + fileName);
                 bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
                 while((line = bufferedReader.readLine()) != null)
                 {
                     System.out.println(line);
                 }
-
             }
-        } catch (IOException e) {
+
+        } catch (IOException e)
+        {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private static void printCurrentTime()
+    public static void printCurrentTime()
     {
-        System.out.print(DATE_FORMAT.format(new Date()) + " ");
+        ICMPFilter.printCurrentTime();
     }
 
-    private static void printOutTally(HashMap<String, Integer> ICMPCategoryMap)
+    private static void printOutTally(HashMap<String, HashMap<String, Integer>> ICMPCategoryMap)
     {
         if(ICMPCategoryMap.isEmpty())
         {
             printCurrentTime();
-            System.out.println("No ICMP data found.");
+            System.out.println("No ICMP data present as yet");
         }
         else
         {
             printCurrentTime();
-            System.out.println("The current tally is as follows:");
-
-            for(String key: ICMPCategoryMap.keySet())
+            System.out.println("The breakdown of the categories is as follows: ");
+            for(String category : ICMPCategoryMap.keySet())
             {
-                System.out.println(key + " : " + ICMPCategoryMap.get(key));
+                HashMap<String, Integer> codeMap = ICMPCategoryMap.get(category);
+
+                for(String code : codeMap.keySet())
+                {
+                    int count = codeMap.get(code);
+
+                    System.out.println(category + " -> " + code + " : " + count);
+                }
             }
         }
     }
