@@ -217,41 +217,47 @@ public class BandwidthAnalyzer {
                 int lineCounter = 1;
                 while((line = bufferedReader.readLine()) != null)
                 {
-                    String[] tempArr = line.split(" ");
+                    String[] tempArr = line.split("\\s+");
 
                     if(lineCounter == 4)
                     {
                         //get the id
                         dataFields[0] = tempArr[1];
+
                     }
                     else if (lineCounter == 5)
                     {
                         //get start day and time
                         dataFields[1] = tempArr[1];
                         dataFields[2] = tempArr[4];
+
                     }
                     else if (lineCounter == 6)
                     {
                         //get end day and time
                         dataFields[3] = tempArr[1];
                         dataFields[4] = tempArr[4];
+
                     }
                     else if (lineCounter == 7)
                     {
                         //get the total time
                         dataFields[5] = tempArr[1];
+
                     }
                     else if (lineCounter == 8)
                     {
                         //get the totalCapSize and CapLen
                         dataFields[6] = tempArr[1];
                         dataFields[7] = tempArr[3];
+
                     }
                     else if (lineCounter == 10)
                     {
                         //get the avgRate and peakRate
                         dataFields[8] = tempArr[1];
                         dataFields[9] = tempArr[4];
+
                     }
 
                     lineCounter++;
