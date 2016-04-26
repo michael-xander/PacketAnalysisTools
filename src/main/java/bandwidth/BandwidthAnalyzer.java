@@ -119,9 +119,6 @@ public class BandwidthAnalyzer {
                     e.printStackTrace();
                 }
 
-
-
-
                 //delete all evidence
                 deleteDirectory(tempFolder);
 
@@ -210,21 +207,10 @@ public class BandwidthAnalyzer {
 
                 printCurrentTime();
                 System.out.println("Printing out obtained input : ");
-                bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-                while((line = bufferedReader.readLine()) != null)
-                {
-                    System.out.println(line);
-                }
-            }
-            else
-            {
-                printCurrentTime();
-                System.out.println("An error occurred on running the tcpdstat command for file : " + fileName);
 
                 //display the dimensions to be stored
                 System.out.println("Id, StartDay, StartTime, EndDay, EndTime, TotalTime(s), TotalCapSize, Caplen (bytes), AvgRate, PeakRate");
-                bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
                 String[] dataFields = new String[10];
 
@@ -269,6 +255,7 @@ public class BandwidthAnalyzer {
                     }
 
                     lineCounter++;
+
                 }
 
                 String outStr = dataFields[0] + ", " + dataFields[1] + ", " + dataFields[2] + ", " + dataFields[3] + ", " + dataFields[4] + ", "
@@ -277,6 +264,19 @@ public class BandwidthAnalyzer {
                 System.out.println(outStr);
                 writer.append(outStr);
                 writer.append("\n");
+            }
+            else
+            {
+                printCurrentTime();
+                System.out.println("An error occurred on running the tcpdstat command for file : " + fileName);
+
+                bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+                while((line = bufferedReader.readLine()) != null)
+                {
+                    System.out.println(line);
+                }
+
             }
         } catch (IOException e) {
             e.printStackTrace();
