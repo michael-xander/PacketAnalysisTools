@@ -2,10 +2,7 @@ package bandwidth;
 
 import icmp.ICMPFilter;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 
 /**
  * <h1>Bandwidth Analyzer</h1>
@@ -83,17 +80,46 @@ public class BandwidthAnalyzer {
                 System.out.println(DATA_DISPLAY_SEPARATOR);
                 System.out.println(DATA_DISPLAY_SEPARATOR);
 
-                for(File file : tempFolder.listFiles())
-                {
-                    if(file.isFile() && !file.isHidden())
-                    {
-                        System.out.println(DATA_DISPLAY_SEPARATOR);
-                        printCurrentTime();
-                        System.out.println("Analysing file : " + file.getName());
+                String analysedDataFileName = null;
 
-                        doAnalysisForGeneratedFiles(folderName + "/" + TEMP_FOLDER_NAME, file.getName());
-                    }
+                if(doUplinkAnalysis)
+                {
+                    analysedDataFileName = "uplink-analysis.csv";
                 }
+                else
+                {
+                    analysedDataFileName = "downlink-analysis.csv";
+                }
+
+                FileWriter analysedDataWriter = null;
+
+                try {
+                    analysedDataWriter = new FileWriter(analysedDataFileName);
+
+                    //the column heads
+                    analysedDataWriter.append("Id, StartDay, StartTime, EndDay, EndTime, TotalTime(s), TotalCapSize, Caplen (bytes), AvgRate, PeakRate");
+                    analysedDataWriter.append("\n");
+
+                    for(File file : tempFolder.listFiles())
+                    {
+                        if(file.isFile() && !file.isHidden())
+                        {
+                            System.out.println(DATA_DISPLAY_SEPARATOR);
+                            printCurrentTime();
+                            System.out.println("Analysing file : " + file.getName());
+
+                            doAnalysisForGeneratedFiles(folderName + "/" + TEMP_FOLDER_NAME, file.getName(), analysedDataWriter);
+                        }
+                    }
+
+                    analysedDataWriter.flush();
+                    analysedDataWriter.close();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
 
 
                 //delete all evidence
@@ -163,7 +189,7 @@ public class BandwidthAnalyzer {
         }
     }
 
-    public static void doAnalysisForGeneratedFiles(String folderName, String fileName)
+    public static void doAnalysisForGeneratedFiles(String folderName, String fileName, FileWriter writer)
     {
         ProcessBuilder processBuilder = new ProcessBuilder("tcpdstat", folderName + "/" + fileName);
 
@@ -196,12 +222,61 @@ public class BandwidthAnalyzer {
                 printCurrentTime();
                 System.out.println("An error occurred on running the tcpdstat command for file : " + fileName);
 
+                //display the dimensions to be stored
+                System.out.println("Id, StartDay, StartTime, EndDay, EndTime, TotalTime(s), TotalCapSize, Caplen (bytes), AvgRate, PeakRate");
                 bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
+                String[] dataFields = new String[10];
+
+                int lineCounter = 1;
                 while((line = bufferedReader.readLine()) != null)
                 {
-                    System.out.println(line);
+                    String[] tempArr = line.split(" ");
+
+                    if(lineCounter == 4)
+                    {
+                        //get the id
+                        dataFields[0] = tempArr[1];
+                    }
+                    else if (lineCounter == 5)
+                    {
+                        //get start day and time
+                        dataFields[1] = tempArr[1];
+                        dataFields[2] = tempArr[4];
+                    }
+                    else if (lineCounter == 6)
+                    {
+                        //get end day and time
+                        dataFields[3] = tempArr[1];
+                        dataFields[4] = tempArr[4];
+                    }
+                    else if (lineCounter == 7)
+                    {
+                        //get the total time
+                        dataFields[5] = tempArr[1];
+                    }
+                    else if (lineCounter == 8)
+                    {
+                        //get the totalCapSize and CapLen
+                        dataFields[6] = tempArr[1];
+                        dataFields[7] = tempArr[3];
+                    }
+                    else if (lineCounter == 10)
+                    {
+                        //get the avgRate and peakRate
+                        dataFields[8] = tempArr[1];
+                        dataFields[9] = tempArr[4];
+                    }
+
+                    lineCounter++;
                 }
+
+                String outStr = dataFields[0] + ", " + dataFields[1] + ", " + dataFields[2] + ", " + dataFields[3] + ", " + dataFields[4] + ", "
+                        + dataFields[5] + ", " + dataFields[6] + ", " + dataFields[7] + ", " + dataFields[8] + ", " + dataFields[9];
+
+                System.out.println(outStr);
+                writer.append(outStr);
+                writer.append("\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
