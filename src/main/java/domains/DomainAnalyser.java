@@ -112,6 +112,9 @@ public class DomainAnalyser
 
             files = tempFolder.listFiles();
 
+            File subTempFolder = new File(folderName + "/" + TEMP_FOLDER_NAME + "/" + SUB_TEMP_FOLDER_NAME);
+            subTempFolder.mkdir();
+
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
@@ -130,7 +133,6 @@ public class DomainAnalyser
             printCurrentTime();
             System.out.println("Beginning tallying for IP addresses");
 
-            File subTempFolder = new File(folderName + "/" + TEMP_FOLDER_NAME + "/" + SUB_TEMP_FOLDER_NAME);
             files = subTempFolder.listFiles();
 
             Scanner scanner = null;
