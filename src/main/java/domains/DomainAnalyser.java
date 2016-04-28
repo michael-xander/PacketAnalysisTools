@@ -139,8 +139,9 @@ public class DomainAnalyser
             Scanner scanner = null;
             InetAddress inetAddress = null;
 
-            // map to hold the counts for domains encountered
-            HashMap<String, Integer> domainCounterMap = new HashMap<String, Integer>();
+
+            //counting the different ips
+            HashMap<String, Long> ipCounterMap = new HashMap<String, Long>();
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
@@ -148,7 +149,6 @@ public class DomainAnalyser
                     System.out.println(DATA_DISPLAY_SEPARATOR);
                     printCurrentTime();
                     System.out.println("Getting tally from file : " + file.getName());
-                    System.out.println("-> Domain, Count");
                     try {
                         scanner = new Scanner(file);
 
@@ -164,28 +164,15 @@ public class DomainAnalyser
                                 String ipAddress = strArr[0];
                                 String ipAddressStrCount = strArr[1];
 
-                                try {
-                                    inetAddress = InetAddress.getByName(ipAddress);
-                                    String host = inetAddress.getHostName();
-
-                                    System.out.println("-> " + host + ", " + ipAddressStrCount);
-
-                                    // add domain count to map
-                                    int ipAddressCount = Integer.parseInt(ipAddressStrCount);
-
-                                    if(!domainCounterMap.containsKey(host))
-                                    {
-                                        domainCounterMap.put(host, 0);
-                                    }
-
-                                    int currentCount = domainCounterMap.get(host);
-
-                                    //update the host count
-                                    domainCounterMap.put(host, (currentCount + ipAddressCount));
-
-                                } catch (UnknownHostException e) {
-                                    e.printStackTrace();
+                                if(!ipCounterMap.containsKey(ipAddress))
+                                {
+                                    ipCounterMap.put(ipAddress, 0L);
                                 }
+
+                                long currentCount = ipCounterMap.get(ipAddress);
+                                long countToAdd = Long.parseLong(ipAddressStrCount);
+
+                                ipCounterMap.put(ipAddress, (currentCount + countToAdd));
                             }
                         }
                     } catch (FileNotFoundException e) {
@@ -194,21 +181,71 @@ public class DomainAnalyser
                 }
             }
 
+            // map to hold the counts for domains encountered
+            HashMap<String, Long> domainCounterMap = new HashMap<String, Long>();
+
+            InetAddress address = null;
+
+            System.out.println(DATA_DISPLAY_SEPARATOR);
+            printCurrentTime();
+            System.out.println("IP to domain name translation");
+            printCurrentTime();
+            System.out.println("ip address, host name");
+
+            //getting the domain names
+            for(String ipAddress : ipCounterMap.keySet())
+            {
+                try {
+                    address = InetAddress.getByName(ipAddress);
+
+                    String host = address.getHostName();
+
+                    printCurrentTime();
+                    System.out.println(ipAddress + ", " + host);
+
+                    if(!domainCounterMap.containsKey(host))
+                    {
+                        domainCounterMap.put(host, 0L);
+                    }
+
+                    long currentCount = domainCounterMap.get(host);
+                    long countToAdd = ipCounterMap.get(ipAddress);
+
+                    domainCounterMap.put(host, (currentCount + countToAdd));
+
+
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+            }
+
             //TODO: place tallies in csv file
             String analysedDataFileName = "domain-analysis.csv";
 
             FileWriter writer = null;
 
+            System.out.println(DATA_DISPLAY_SEPARATOR);
+
+            printCurrentTime();
+            System.out.println("Writing host counts to file");
+
             try {
                 writer = new FileWriter(analysedDataFileName);
 
+                printCurrentTime();
+                System.out.println("host, count");
                 //the column heads
-                writer.append("Domain, Count");
+                writer.append("host, count");
                 writer.append("\n");
 
                 for(String domainName : domainCounterMap.keySet())
                 {
-                    writer.append(domainName + ", " + domainCounterMap.get(domainName));
+                    long count = domainCounterMap.get(domainName);
+
+                    printCurrentTime();
+                    System.out.println(domainName + ", " + count);
+
+                    writer.append(domainName + ", " + count);
                     writer.append("\n");
                 }
 
