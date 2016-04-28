@@ -195,7 +195,28 @@ public class DomainAnalyser
             }
 
             //TODO: place tallies in csv file
+            String analysedDataFileName = "domain-analysis.csv";
 
+            FileWriter writer = null;
+
+            try {
+                writer = new FileWriter(analysedDataFileName);
+
+                //the column heads
+                writer.append("Domain, Count");
+                writer.append("\n");
+
+                for(String domainName : domainCounterMap.keySet())
+                {
+                    writer.append(domainName + ", " + domainCounterMap.get(domainName));
+                    writer.append("\n");
+                }
+
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             //delete temporary folder
             deleteDirectory(tempFolder);
         }
