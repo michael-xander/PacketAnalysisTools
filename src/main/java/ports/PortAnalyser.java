@@ -215,6 +215,8 @@ public class PortAnalyser
                 {
                     if(line.equals("### Protocol Breakdown ###"))
                         inProtocolSection = true;
+                    else if(line.equals(">>>>"))
+                        inProtocolSection = false;
 
                     if(inProtocolSection)
                     {
