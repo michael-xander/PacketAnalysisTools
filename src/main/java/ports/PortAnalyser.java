@@ -2,10 +2,8 @@ package ports;
 
 import icmp.ICMPFilter;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.util.HashMap;
 
 /**
  * <h1>Port Analyser</h1>
@@ -110,7 +108,8 @@ public class PortAnalyser
 
             files = tempFolder.listFiles();
 
-            //TODO: create data structure to hold counts
+            HashMap<String, HashMap<String, Long>> portCounterMap = new HashMap<String, HashMap<String, Long>>();
+
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
@@ -119,8 +118,39 @@ public class PortAnalyser
                     printCurrentTime();
                     System.out.println("Preparing to analyse file : " + file.getName());
 
-                    analyseFilteredFiles((folderName + "/" + TEMP_FOLDER_NAME), file.getName());
+                    analyseFilteredFiles(portCounterMap, (folderName + "/" + TEMP_FOLDER_NAME), file.getName());
                 }
+            }
+
+            String analysedFileName = "port-analysis.csv";
+
+            FileWriter writer = null;
+
+            try {
+                writer = new FileWriter(analysedFileName);
+
+                //the column heads
+                writer.append("protocol, service, bytes");
+                writer.append("\n");
+
+                HashMap<String, Long> serviceCounter = null;
+                for(String protocol : portCounterMap.keySet())
+                {
+                    serviceCounter = portCounterMap.get(protocol);
+
+                    for(String service : serviceCounter.keySet())
+                    {
+                        long byteCount = serviceCounter.get(service);
+
+                        writer.append(protocol + ", " + service + ", " + byteCount);
+                        writer.append("\n");
+                    }
+                }
+
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
             //delete the temporary folder
@@ -174,7 +204,7 @@ public class PortAnalyser
         }
     }
 
-    public static void analyseFilteredFiles(String folderName, String fileName)
+    public static void analyseFilteredFiles(HashMap<String, HashMap<String, Long>> portCounterMap ,String folderName, String fileName)
     {
         ProcessBuilder processBuilder = new ProcessBuilder("tcpdstat", (folderName + "/" + fileName));
 
@@ -240,6 +270,23 @@ public class PortAnalyser
                                 String serviceBytes = strArr[4];
 
                                 System.out.println(currentProtocol + ", " + serviceName + ", " + serviceBytes);
+
+                                if(!portCounterMap.containsKey(currentProtocol))
+                                {
+                                    portCounterMap.put(currentProtocol, new HashMap<String, Long>());
+                                }
+
+                                HashMap<String, Long> serviceCounterMap = portCounterMap.get(currentProtocol);
+
+                                if(!serviceCounterMap.containsKey(serviceName))
+                                {
+                                    serviceCounterMap.put(serviceName, 0L);
+                                }
+
+                                long currentServiceCount = serviceCounterMap.get(serviceName);
+                                long serviceCountToAdd = Long.parseLong(serviceBytes);
+
+                                serviceCounterMap.put(serviceName, (serviceCountToAdd + currentServiceCount));
                             }
 
                             // tcp breakdown to follow

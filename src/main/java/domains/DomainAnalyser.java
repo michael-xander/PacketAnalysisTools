@@ -19,7 +19,7 @@ public class DomainAnalyser
     private static String FOLDER_ARGUMENT_INSTRUCTION = "- Provide a folder to read pcap files from i.e -d sample_folder.";
     private static String FILE_ARGUMENT_INSTRUCTION = "- Provide a pcap file to read from i.e -d file_directory -f sample_file";
 
-    private static String TEMP_FOLDER_NAME = "temp";
+    private static String TEMP_FOLDER_NAME = "domain_temp";
     private static String SUB_TEMP_FOLDER_NAME = "data";
 
     private static String DATA_DISPLAY_SEPARATOR = "======================================================================";
