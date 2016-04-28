@@ -5,6 +5,7 @@ import icmp.ICMPFilter;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Scanner;
 
 /**
@@ -137,6 +138,9 @@ public class DomainAnalyser
 
             Scanner scanner = null;
             InetAddress inetAddress = null;
+
+            // map to hold the counts for domains encountered
+            HashMap<String, Integer> domainCounterMap = new HashMap<String, Integer>();
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
@@ -153,7 +157,6 @@ public class DomainAnalyser
                         {
                             line = scanner.nextLine();
 
-                            //TODO: place tallies in data structure
                             if(!line.contains("!"))
                             {
                                 String[] strArr = line.split("\\s+");
@@ -166,6 +169,20 @@ public class DomainAnalyser
                                     String host = inetAddress.getHostName();
 
                                     System.out.println("-> " + host + ", " + ipAddressStrCount);
+
+                                    // add domain count to map
+                                    int ipAddressCount = Integer.parseInt(ipAddressStrCount);
+
+                                    if(!domainCounterMap.containsKey(host))
+                                    {
+                                        domainCounterMap.put(host, 0);
+                                    }
+
+                                    int currentCount = domainCounterMap.get(host);
+
+                                    //update the host count
+                                    domainCounterMap.put(host, (currentCount + ipAddressCount));
+
                                 } catch (UnknownHostException e) {
                                     e.printStackTrace();
                                 }
@@ -176,6 +193,9 @@ public class DomainAnalyser
                     }
                 }
             }
+
+            //TODO: place tallies in csv file
+
             //delete temporary folder
             deleteDirectory(tempFolder);
         }
