@@ -119,7 +119,6 @@ public class PortAnalyser
                     printCurrentTime();
                     System.out.println("Preparing to analyse file : " + file.getName());
 
-                    //TODO: tcpdstat call on file
                     analyseFilteredFiles((folderName + "/" + TEMP_FOLDER_NAME), file.getName());
                 }
             }
@@ -226,6 +225,13 @@ public class PortAnalyser
                             String tempLine = line.replaceAll("\\(\\s+", "(");
 
                             String[] strArr = tempLine.split("\\s+");
+
+                            if(strArr[0].equals("[2]"))
+                            {
+                                currentProtocol = null;
+                                isTCPBreakdown = false;
+                                isUDPBreakdown = false;
+                            }
 
                             // do processing in here
                             if(isTCPBreakdown || isUDPBreakdown)
