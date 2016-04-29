@@ -5,6 +5,7 @@ import icmp.ICMPFilter;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -109,7 +110,7 @@ public class DomainAnalyser
             System.out.println(DATA_DISPLAY_SEPARATOR);
             System.out.println(DATA_DISPLAY_SEPARATOR);
             printCurrentTime();
-            System.out.println("Beginning IP breakdown");
+            System.out.println("Beginning host name breakdown");
 
             files = tempFolder.listFiles();
 
@@ -122,9 +123,9 @@ public class DomainAnalyser
                 {
                     System.out.println(DATA_DISPLAY_SEPARATOR);
                     printCurrentTime();
-                    System.out.println("Preparing to analyse file : " + file.getName());
+                    System.out.println("Preparing to get host names from file : " + file.getName());
 
-                    generateIPCountFile((folderName + "/" + TEMP_FOLDER_NAME), file.getName(), (folderName + "/" + TEMP_FOLDER_NAME + "/" + SUB_TEMP_FOLDER_NAME));
+                    generateHostNameFiles((folderName + "/" + TEMP_FOLDER_NAME), file.getName(), (folderName + "/" + TEMP_FOLDER_NAME + "/" + SUB_TEMP_FOLDER_NAME));
                 }
             }
 
@@ -132,23 +133,22 @@ public class DomainAnalyser
             System.out.println(DATA_DISPLAY_SEPARATOR);
             System.out.println(DATA_DISPLAY_SEPARATOR);
             printCurrentTime();
-            System.out.println("Beginning tallying for IP addresses");
+            System.out.println("Beginning host name retrieval");
 
             files = subTempFolder.listFiles();
 
             Scanner scanner = null;
-            InetAddress inetAddress = null;
 
+            //counting the different domains
+            HashMap<String, Long> domainCounterMap = new HashMap<String, Long>();
 
-            //counting the different ips
-            HashMap<String, Long> ipCounterMap = new HashMap<String, Long>();
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
                 {
                     System.out.println(DATA_DISPLAY_SEPARATOR);
                     printCurrentTime();
-                    System.out.println("Getting tally from file : " + file.getName());
+                    System.out.println("Hosts from file : " + file.getName());
                     try {
                         scanner = new Scanner(file);
 
@@ -157,65 +157,23 @@ public class DomainAnalyser
                         {
                             line = scanner.nextLine();
 
-                            if(!line.contains("!"))
+                            if(!line.contains("#"))
                             {
-                                String[] strArr = line.split("\\s+");
+                                String hostName = line.trim();
 
-                                String ipAddress = strArr[0];
-                                String ipAddressStrCount = strArr[1];
-
-                                if(!ipCounterMap.containsKey(ipAddress))
+                                if(!domainCounterMap.containsKey(hostName))
                                 {
-                                    ipCounterMap.put(ipAddress, 0L);
+                                    domainCounterMap.put(hostName, 0L);
                                 }
 
-                                long currentCount = ipCounterMap.get(ipAddress);
-                                long countToAdd = Long.parseLong(ipAddressStrCount);
+                                long currentCount = domainCounterMap.get(hostName);
 
-                                ipCounterMap.put(ipAddress, (currentCount + countToAdd));
+                                domainCounterMap.put(hostName, (currentCount + 1));
                             }
                         }
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     }
-                }
-            }
-
-            // map to hold the counts for domains encountered
-            HashMap<String, Long> domainCounterMap = new HashMap<String, Long>();
-
-            InetAddress address = null;
-
-            System.out.println(DATA_DISPLAY_SEPARATOR);
-            printCurrentTime();
-            System.out.println("IP to domain name translation");
-            printCurrentTime();
-            System.out.println("ip address, host name");
-
-            //getting the domain names
-            for(String ipAddress : ipCounterMap.keySet())
-            {
-                try {
-                    address = InetAddress.getByName(ipAddress);
-
-                    String host = address.getHostName();
-
-                    printCurrentTime();
-                    System.out.println(ipAddress + ", " + host);
-
-                    if(!domainCounterMap.containsKey(host))
-                    {
-                        domainCounterMap.put(host, 0L);
-                    }
-
-                    long currentCount = domainCounterMap.get(host);
-                    long countToAdd = ipCounterMap.get(ipAddress);
-
-                    domainCounterMap.put(host, (currentCount + countToAdd));
-
-
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
                 }
             }
 
@@ -302,24 +260,26 @@ public class DomainAnalyser
 
     }
 
-    public static void generateIPCountFile(String folderName, String fileName, String tempFolderName)
+    public static void generateHostNameFiles(String folderName, String fileName, String tempFolderName)
     {
-        ProcessBuilder processBuilder = new ProcessBuilder("ipaggcreate", "-d" , "-r", (folderName + "/" + fileName),
-                "-o", (tempFolderName + "/data_" + fileName));
+        ProcessBuilder processBuilder = new ProcessBuilder("httpry", "-f", "host" , "-r", (folderName + "/" + fileName), "-o", (tempFolderName + "/data_" + fileName));
 
         try {
             printCurrentTime();
-            System.out.println("Analysing file : " + fileName);
+            System.out.println("Getting hosts for file : " + fileName);
 
             Process process = processBuilder.start();
+
             int errorCode = process.waitFor();
 
             printCurrentTime();
             if(errorCode == 0)
-                System.out.println("No error occurred on running ipaggcreate command for file: " + folderName + "/" + fileName);
+            {
+                System.out.println("No error occurred on running httpry command for file : " + fileName);
+            }
             else
             {
-                System.out.println("An error occurred while running ipaggcreate command for file : " + folderName + "/" + fileName);
+                System.out.println("An error occurred on running httpry command for file : " + fileName);
 
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 String line = null;
