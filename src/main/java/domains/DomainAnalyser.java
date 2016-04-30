@@ -141,6 +141,7 @@ public class DomainAnalyser
 
             //counting the different domains
             HashMap<String, Long> domainCounterMap = new HashMap<String, Long>();
+            HashMap<String, Long> dataCounterMap = new HashMap<String, Long>();
 
             for(File file : files)
             {
@@ -161,6 +162,15 @@ public class DomainAnalyser
                             {
                                 String temp = line.trim();
 
+                                if(!dataCounterMap.containsKey(temp))
+                                {
+                                    dataCounterMap.put(temp, 0L);
+                                }
+
+                                long currentCount = dataCounterMap.get(temp);
+                                dataCounterMap.put(temp, (currentCount + 1));
+
+                                /*
                                 String[] strArr = temp.split("\\.");
 
                                 if(strArr.length >= 2)
@@ -176,13 +186,65 @@ public class DomainAnalyser
                                     long currentCount = domainCounterMap.get(hostName);
 
                                     domainCounterMap.put(hostName, (currentCount + 1));
-                                }
+                                }*/
                             }
                         }
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     }
                 }
+            }
+
+            System.out.println(DATA_DISPLAY_SEPARATOR);
+            printCurrentTime();
+            System.out.println("Doing conversion");
+
+            InetAddress inetAddress = null;
+            for(String tempDomain : dataCounterMap.keySet())
+            {
+                String[] strArr = tempDomain.split("\\.");
+
+                String hostName = null;
+
+                String lastItem = strArr[strArr.length-1];
+
+                if(lastItem.matches("[a-zA-Z]+"))
+                {
+                    hostName = "*." + (strArr[strArr.length - 2] + "." + strArr[strArr.length -1]);
+                }
+                else if(lastItem.matches("[0-9]+")) // ip address
+                {
+                    try {
+                        inetAddress = InetAddress.getByName(tempDomain);
+                        String host = inetAddress.getHostName();
+                        String[] tempArr = host.split("\\.");
+
+                        if(tempArr[tempArr.length - 1].matches("[0-9]+"))
+                        {
+                            hostName = host;
+                        }
+                        else
+                        {
+                            hostName = "*." + (tempArr[tempArr.length - 2] + "." + tempArr[tempArr.length -1]);
+                        }
+                    } catch (UnknownHostException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else
+                {
+                    hostName = tempDomain;
+                }
+
+                if(!domainCounterMap.containsKey(hostName))
+                {
+                    domainCounterMap.put(hostName, 0L);
+                }
+
+                long currentCount = domainCounterMap.get(hostName);
+                long countToAdd = dataCounterMap.get(tempDomain);
+
+                domainCounterMap.put(hostName, (currentCount + countToAdd));
             }
 
             //TODO: place tallies in csv file
