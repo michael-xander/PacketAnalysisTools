@@ -159,16 +159,24 @@ public class DomainAnalyser
 
                             if(!line.contains("#"))
                             {
-                                String hostName = line.trim();
+                                String temp = line.trim();
 
-                                if(!domainCounterMap.containsKey(hostName))
+                                String[] strArr = temp.split("\\.");
+
+                                if(strArr.length >= 2)
                                 {
-                                    domainCounterMap.put(hostName, 0L);
+
+                                    String hostName = "*." + (strArr[strArr.length - 2] + "." + strArr[strArr.length -1]);
+
+                                    if(!domainCounterMap.containsKey(hostName))
+                                    {
+                                        domainCounterMap.put(hostName, 0L);
+                                    }
+
+                                    long currentCount = domainCounterMap.get(hostName);
+
+                                    domainCounterMap.put(hostName, (currentCount + 1));
                                 }
-
-                                long currentCount = domainCounterMap.get(hostName);
-
-                                domainCounterMap.put(hostName, (currentCount + 1));
                             }
                         }
                     } catch (FileNotFoundException e) {
