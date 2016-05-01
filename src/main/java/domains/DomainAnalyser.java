@@ -210,7 +210,10 @@ public class DomainAnalyser
 
                 if(lastItem.matches("[a-zA-Z]+"))
                 {
-                    hostName = "*." + (strArr[strArr.length - 2] + "." + strArr[strArr.length -1]);
+                    if(strArr.length >= 2)
+                        hostName = "*." + (strArr[strArr.length - 2] + "." + strArr[strArr.length -1]);
+                    else
+                        hostName = "*." + lastItem;
                 }
                 else if(lastItem.matches("[0-9]+")) // ip address
                 {
@@ -225,7 +228,10 @@ public class DomainAnalyser
                         }
                         else
                         {
-                            hostName = "*." + (tempArr[tempArr.length - 2] + "." + tempArr[tempArr.length -1]);
+                            if(tempArr.length >= 2)
+                                hostName = "*." + (tempArr[tempArr.length - 2] + "." + tempArr[tempArr.length -1]);
+                            else
+                                hostName = "*." + (tempArr[tempArr.length - 1]);
                         }
                     } catch (UnknownHostException e) {
                         e.printStackTrace();
@@ -295,7 +301,7 @@ public class DomainAnalyser
 
     public static void generateFilteredPcapFile(String folderName, String fileName, String tempFolderName)
     {
-        String filterString = "(src net 192.168.0.0/16 or 10.0.0.0/8) and not ((src net 192.168.0.0/16 or 10.0.0.0/8) and (dst net 192.168.0.0/16 or 10.0.0.0/8))";
+        String filterString = "(src net 192.168.0.0/16 or 10.0.0.0/8) and (port http or https) and not ((src net 192.168.0.0/16 or 10.0.0.0/8) and (dst net 192.168.0.0/16 or 10.0.0.0/8))";
 
         ProcessBuilder processBuilder = new ProcessBuilder("tcpdump", filterString, "-r", (folderName + "/" + fileName), "-w",
                 (tempFolderName + "/temp_" + fileName));
