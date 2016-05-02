@@ -15,7 +15,7 @@ public class BandwidthAnalyzer {
 
     private static String DATA_DISPLAY_SEPARATOR = "======================================================================";
 
-    private static String TEMP_FOLDER_NAME = "temp";
+    private static String TEMP_FOLDER_NAME = "band_temp";
 
     public static void main(String[] args)
     {
@@ -60,7 +60,7 @@ public class BandwidthAnalyzer {
                     System.exit(1);
                 }
 
-                //iterate through the dumps in the provided folder
+                //iterate through the dumps in the provided folder in order to filter them
                 File folder = new File(folderName);
 
                 for(File file : folder.listFiles())
@@ -136,6 +136,13 @@ public class BandwidthAnalyzer {
         }
     }
 
+    /**
+     * Filters provided pcap files removing local traffic and
+     * @param isUplinkAnalysis - whether to do uplink or downlink filtering
+     * @param folderName - folder containing the pcap file
+     * @param fileName - the pcap file to be filtered
+     * @param tempFolderName - the folder to write the filtered pcap file to
+     */
     public static void generateRequiredLinkFiles(boolean isUplinkAnalysis, String folderName, String fileName, String tempFolderName)
     {
         //generate the right filter string depending on whether uplink or downlink analysis is being done
@@ -186,6 +193,12 @@ public class BandwidthAnalyzer {
         }
     }
 
+    /**
+     * Applies tcpdstat to a pcap file in order to read the stats returned and write the required fields to file
+     * @param folderName - the folder containing the pcap file
+     * @param fileName - the name of the pcap file
+     * @param writer - writer to file for the required fields
+     */
     public static void doAnalysisForGeneratedFiles(String folderName, String fileName, FileWriter writer)
     {
         ProcessBuilder processBuilder = new ProcessBuilder("tcpdstat", folderName + "/" + fileName);
@@ -291,9 +304,16 @@ public class BandwidthAnalyzer {
         }
     }
 
+    /**
+     * Prints the current time
+     */
     public static void printCurrentTime() {
         ICMPFilter.printCurrentTime();}
 
+    /**
+     * Deletes the provided directory or file
+     * @param file - the folder or file to delete
+     */
     public static void deleteDirectory(File file)
     {
         ICMPFilter.deleteDirectory(file);
