@@ -5,13 +5,12 @@ import icmp.ICMPFilter;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Scanner;
 
 /**
  * <h1>Domain Analyser</h1>
- * Lists the domains from pcap files.
+ * Lists the domains visited from pcap files.
  * @author Michael Kyeyune
  * @since 2016-04-27
  */
@@ -117,6 +116,7 @@ public class DomainAnalyser
             File subTempFolder = new File(folderName + "/" + TEMP_FOLDER_NAME + "/" + SUB_TEMP_FOLDER_NAME);
             subTempFolder.mkdir();
 
+            //for each pcap file, apply the httpry tool to obtain the hosts and write to file
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
@@ -129,7 +129,7 @@ public class DomainAnalyser
                 }
             }
 
-            //read in the files with ip breakdowns and tally up the counts
+            //read in the files with host breakdowns and tally up the counts
             System.out.println(DATA_DISPLAY_SEPARATOR);
             System.out.println(DATA_DISPLAY_SEPARATOR);
             printCurrentTime();
@@ -141,8 +141,11 @@ public class DomainAnalyser
 
             //counting the different domains
             HashMap<String, Long> domainCounterMap = new HashMap<String, Long>();
+
+            //map to hold the different domains read from the httpry output files
             HashMap<String, Long> dataCounterMap = new HashMap<String, Long>();
 
+            // read the input from the files written by httpry for host names
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
@@ -170,23 +173,6 @@ public class DomainAnalyser
                                 long currentCount = dataCounterMap.get(temp);
                                 dataCounterMap.put(temp, (currentCount + 1));
 
-                                /*
-                                String[] strArr = temp.split("\\.");
-
-                                if(strArr.length >= 2)
-                                {
-
-                                    String hostName = "*." + (strArr[strArr.length - 2] + "." + strArr[strArr.length -1]);
-
-                                    if(!domainCounterMap.containsKey(hostName))
-                                    {
-                                        domainCounterMap.put(hostName, 0L);
-                                    }
-
-                                    long currentCount = domainCounterMap.get(hostName);
-
-                                    domainCounterMap.put(hostName, (currentCount + 1));
-                                }*/
                             }
                         }
                     } catch (FileNotFoundException e) {
@@ -200,6 +186,8 @@ public class DomainAnalyser
             System.out.println("Doing conversion");
 
             InetAddress inetAddress = null;
+
+            //summarise the different host names to their respective domains.
             for(String tempDomain : dataCounterMap.keySet())
             {
                 String[] strArr = tempDomain.split("\\.");
@@ -215,13 +203,14 @@ public class DomainAnalyser
                     else
                         hostName = "*." + lastItem;
                 }
-                else if(lastItem.matches("[0-9]+")) // ip address
+                else if(lastItem.matches("[0-9]+")) // if an ip address, try to lookup the host name
                 {
                     try {
                         inetAddress = InetAddress.getByName(tempDomain);
                         String host = inetAddress.getHostName();
                         String[] tempArr = host.split("\\.");
 
+                        //on failing to get a host name, stick to the ip address as domain
                         if(tempArr[tempArr.length - 1].matches("[0-9]+"))
                         {
                             hostName = host;
@@ -253,7 +242,7 @@ public class DomainAnalyser
                 domainCounterMap.put(hostName, (currentCount + countToAdd));
             }
 
-            //TODO: place tallies in csv file
+            // write the domains to file
             String analysedDataFileName = "domain-analysis.csv";
 
             FileWriter writer = null;
@@ -299,6 +288,12 @@ public class DomainAnalyser
         }
     }
 
+    /**
+     * Filters pcap files removing local traffic and leaving only packets destined outside the local network i.e incoming traffic removed
+     * @param folderName - folder where pcap file to be filtered is held
+     * @param fileName - name of the pcap file to filter
+     * @param tempFolderName - folder where tcpdump filtered pcap file will be placed
+     */
     public static void generateFilteredPcapFile(String folderName, String fileName, String tempFolderName)
     {
         String filterString = "(src net 192.168.0.0/16 or 10.0.0.0/8) and (port http or https) and not ((src net 192.168.0.0/16 or 10.0.0.0/8) and (dst net 192.168.0.0/16 or 10.0.0.0/8))";
@@ -336,6 +331,12 @@ public class DomainAnalyser
 
     }
 
+    /**
+     * Applies httpry tool to pcap files to get the host names then write them to file
+     * @param folderName - folder where the pcap file is located
+     * @param fileName - the name of the pcap file
+     * @param tempFolderName - the folder where the httpry output file with hosts is to be placed
+     */
     public static void generateHostNameFiles(String folderName, String fileName, String tempFolderName)
     {
         ProcessBuilder processBuilder = new ProcessBuilder("httpry", "-f", "host" , "-r", (folderName + "/" + fileName), "-o", (tempFolderName + "/data_" + fileName));
@@ -371,11 +372,19 @@ public class DomainAnalyser
             e.printStackTrace();
         }
     }
+
+    /**
+     * Prints the current system time
+     */
     public static void printCurrentTime()
     {
         ICMPFilter.printCurrentTime();
     }
 
+    /**
+     * Deletes the provided file/directory
+     * @param file - the file to delete
+     */
     public static void deleteDirectory(File file)
     {
         ICMPFilter.deleteDirectory(file);
