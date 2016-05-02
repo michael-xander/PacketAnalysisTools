@@ -1,0 +1,12 @@
+type, code, count
+redirect, host, 75
+timeexceeded, transit, 7276
+unreachable, port, 29651
+unreachable, filterprohibited, 52887
+unreachable, hostprohibited, 1161
+unreachable, host, 10476
+unreachable, needfrag, 52
+unreachable, net, 454
+sourcequench, 0, 17
+echo, 0, 36908
+echo-reply, 0, 15639
