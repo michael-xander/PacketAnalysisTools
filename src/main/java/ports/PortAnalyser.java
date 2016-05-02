@@ -86,7 +86,7 @@ public class PortAnalyser
                 System.exit(1);
             }
 
-            //iterate through the pcap files
+            //iterate through the pcap files applying tcpdump to each to filter out local traffic
 
             for(File file : files)
             {
@@ -108,8 +108,10 @@ public class PortAnalyser
 
             files = tempFolder.listFiles();
 
+            //hash map to keep track of the ports, services and bytes for each
             HashMap<String, HashMap<String, Long>> portCounterMap = new HashMap<String, HashMap<String, Long>>();
 
+            //apply tcpdstat to each filtered pcap file to obtain port stats
             for(File file : files)
             {
                 if(file.isFile() && !file.isHidden())
@@ -126,6 +128,7 @@ public class PortAnalyser
 
             FileWriter writer = null;
 
+            //write the results obtained to file
             try {
                 writer = new FileWriter(analysedFileName);
 
@@ -164,6 +167,12 @@ public class PortAnalyser
         }
     }
 
+    /**
+     * Filters pcap files to remove local traffic
+     * @param folderName - the folder with pcap file to filter
+     * @param fileName - the pcap file to filter
+     * @param tempFolderName - the folder where the filtered pcap file will be written into
+     */
     public static void generateFilteredFiles(String folderName, String fileName, String tempFolderName)
     {
         String filterString = "not ((src net 192.168.0.0/16 or 10.0.0.0/8) and (dst net 192.168.0.0/16 or 10.0.0.0/8))";
@@ -204,6 +213,12 @@ public class PortAnalyser
         }
     }
 
+    /**
+     * Applies the tcpdstat tool to a pcap file to get stats about the bytes used by ports
+     * @param portCounterMap - hashmap that keeps count of bytes per port
+     * @param folderName - folder containing the pcap file
+     * @param fileName - the pcap file which is to analysed
+     */
     public static void analyseFilteredFiles(HashMap<String, HashMap<String, Long>> portCounterMap ,String folderName, String fileName)
     {
         ProcessBuilder processBuilder = new ProcessBuilder("tcpdstat", (folderName + "/" + fileName));
@@ -335,12 +350,18 @@ public class PortAnalyser
     }
 
 
-
+    /**
+     * Prints the current system time
+     */
     public static void printCurrentTime()
     {
         ICMPFilter.printCurrentTime();
     }
 
+    /**
+     * Deletes provided file or folder
+     * @param file - file or folder to delete
+     */
     public static void deleteDirectory(File file)
     {
         ICMPFilter.deleteDirectory(file);
