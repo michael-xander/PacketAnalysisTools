@@ -1,6 +1,6 @@
 package bandwidth;
 
-import icmp.ICMPFilter;
+import icmp.ICMPAnalyser;
 
 import java.io.*;
 
@@ -308,7 +308,7 @@ public class BandwidthAnalyzer {
      * Prints the current time
      */
     public static void printCurrentTime() {
-        ICMPFilter.printCurrentTime();}
+        ICMPAnalyser.printCurrentTime();}
 
     /**
      * Deletes the provided directory or file
@@ -316,6 +316,6 @@ public class BandwidthAnalyzer {
      */
     public static void deleteDirectory(File file)
     {
-        ICMPFilter.deleteDirectory(file);
+        ICMPAnalyser.deleteDirectory(file);
     }
 }

@@ -1,6 +1,6 @@
 package domains;
 
-import icmp.ICMPFilter;
+import icmp.ICMPAnalyser;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -378,7 +378,7 @@ public class DomainAnalyser
      */
     public static void printCurrentTime()
     {
-        ICMPFilter.printCurrentTime();
+        ICMPAnalyser.printCurrentTime();
     }
 
     /**
@@ -387,6 +387,6 @@ public class DomainAnalyser
      */
     public static void deleteDirectory(File file)
     {
-        ICMPFilter.deleteDirectory(file);
+        ICMPAnalyser.deleteDirectory(file);
     }
 }
