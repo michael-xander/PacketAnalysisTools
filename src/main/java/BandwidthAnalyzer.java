@@ -1,7 +1,3 @@
-package bandwidth;
-
-import icmp.ICMPAnalyser;
-
 import java.io.*;
 
 /**

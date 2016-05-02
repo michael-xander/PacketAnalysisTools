@@ -1,6 +1,3 @@
-package ports;
-
-import icmp.ICMPAnalyser;
 
 import java.io.*;
 import java.util.HashMap;
