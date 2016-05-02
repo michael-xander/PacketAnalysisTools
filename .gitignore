@@ -12,3 +12,6 @@ traffic/
 # removing content in the target folder
 target/
 !target/.gitkeep
+
+*.csv
+!sample_output/*.csv
