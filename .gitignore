@@ -10,8 +10,5 @@ traffic/
 *.iml
 .idea
 # removing content in the target folder
-target/
+target/*
 !target/.gitkeep
-
-*.csv
-!sample_output/*.csv
